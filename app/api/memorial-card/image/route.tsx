@@ -30,11 +30,14 @@ function loadFont(weight: 400 | 700): Buffer {
 }
 
 function formatIntermentDate(dateStr: string): string {
-  const date = new Date(dateStr + "T00:00:00");
+  // ISO format (YYYY-MM-DD) needs T00:00:00 to avoid UTC offset shifting the day.
+  // Human-readable strings ("May 9, 2026") parse correctly on their own.
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+    ? new Date(dateStr + "T00:00:00")
+    : new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
   const day = String(date.getDate()).padStart(2, "0");
-  const month = date
-    .toLocaleDateString("en-US", { month: "long" })
-    .toUpperCase();
+  const month = date.toLocaleDateString("en-US", { month: "long" }).toUpperCase();
   const year = date.getFullYear();
   return `${day} ${month} ${year}`;
 }
@@ -191,6 +194,7 @@ export async function GET(request: NextRequest) {
               lineHeight: "1.06",
               letterSpacing: "0.02em",
               marginBottom: "18px",
+              textTransform: "uppercase",
               fontFamily,
             }}
           >

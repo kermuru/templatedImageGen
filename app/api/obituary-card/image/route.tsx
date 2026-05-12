@@ -25,7 +25,10 @@ function loadFont(weight: 400 | 700): Buffer {
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "";
-  const date = new Date(dateStr + "T00:00:00");
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+    ? new Date(dateStr + "T00:00:00")
+    : new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 

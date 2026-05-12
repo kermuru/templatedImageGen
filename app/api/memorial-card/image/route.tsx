@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
   const bgDataUri = await buildBackground(basePath, resolvedPhotoPath);
 
   // Fonts
-  const fonts: ConstructorParameters<typeof ImageResponse>[1]["fonts"] = [
+  const fonts: NonNullable<ConstructorParameters<typeof ImageResponse>[1]>["fonts"] = [
     { name: "Garamond", data: loadFont(400), weight: 400, style: "normal" },
     { name: "Garamond", data: loadFont(700), weight: 700, style: "normal" },
   ];

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile } from "fs/promises";
 import path from "path";
 import os from "os";
+import { put } from "@vercel/blob";
 import { GET } from "@/app/api/memorial-card/image/route";
 
 export const runtime = "nodejs";
@@ -56,7 +57,12 @@ export async function POST(request: NextRequest) {
   }
 
   const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-  return NextResponse.json({
-    url: `data:image/png;base64,${imageBuffer.toString("base64")}`,
+  const filename = `memorial/${crypto.randomUUID()}.png`;
+
+  const blob = await put(filename, imageBuffer, {
+    access: "public",
+    contentType: "image/png",
   });
+
+  return NextResponse.json({ url: blob.url });
 }

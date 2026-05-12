@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile } from "fs/promises";
 import path from "path";
 import os from "os";
+import { put } from "@vercel/blob";
 import { GET } from "@/app/api/obituary-card/image/route";
 
 export const runtime = "nodejs";
@@ -52,7 +53,12 @@ export async function POST(request: NextRequest) {
   }
 
   const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-  return NextResponse.json({
-    url: `data:image/jpeg;base64,${imageBuffer.toString("base64")}`,
+  const filename = `obituary/${crypto.randomUUID()}.jpg`;
+
+  const blob = await put(filename, imageBuffer, {
+    access: "public",
+    contentType: "image/jpeg",
   });
+
+  return NextResponse.json({ url: blob.url });
 }

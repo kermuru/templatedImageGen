@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { name, date_of_interment, interment_time, location, photo_url } = body;
+  const { name, date_of_interment, mass_time, interment_time, location, photo_url } = body;
 
   if (!name || !date_of_interment) {
     return NextResponse.json(
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
   const imageUrl = new URL("/api/memorial-card/image", request.url);
   imageUrl.searchParams.set("name", name);
   imageUrl.searchParams.set("interment", date_of_interment);
+  if (mass_time)       imageUrl.searchParams.set("mass_time", mass_time);
   if (interment_time)  imageUrl.searchParams.set("interment_time", interment_time);
   if (location)        imageUrl.searchParams.set("location", location);
   if (savedPhotoParam) imageUrl.searchParams.set("photo", savedPhotoParam);

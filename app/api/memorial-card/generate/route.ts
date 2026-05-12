@@ -1,28 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile } from "fs/promises";
 import path from "path";
+import os from "os";
 import { GET } from "@/app/api/memorial-card/image/route";
 
 export const runtime = "nodejs";
 
-/**
- * POST /api/memorial-card/generate
- *
- * n8n webhook endpoint. Accepts JSON, saves the generated memorial card to
- * disk, and returns a public URL.
- *
- * Body fields:
- *   name              string  required  Full name of the deceased
- *   date_of_interment string  required  ISO date e.g. "2026-05-11"
- *   interment_time    string  optional  e.g. "10:00 AM"
- *   location          string  optional  default "Renaissance Park"
- *   photo_url         string  optional  Public URL of the person's photo
- *
- * Note: mass_time is intentionally omitted — not passed from n8n workflow.
- *
- * Response:
- *   { "url": "https://your-domain.com/generated/memorial/<uuid>.png" }
- */
 export async function POST(request: NextRequest) {
   let body: Record<string, string>;
   try {
@@ -40,7 +23,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Download the photo and save locally so the image pipeline can access it
+  // Download photo to /tmp (writable on Vercel serverless)
   let savedPhotoParam: string | null = null;
   if (photo_url) {
     try {
@@ -52,16 +35,14 @@ export async function POST(request: NextRequest) {
                 : contentType.includes("webp") ? "webp"
                 : "jpg";
 
-      const filename = `${crypto.randomUUID()}.${ext}`;
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "memorial");
-      await writeFile(path.join(uploadDir, filename), Buffer.from(await res.arrayBuffer()));
-      savedPhotoParam = `/uploads/memorial/${filename}`;
+      const tmpPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.${ext}`);
+      await writeFile(tmpPath, Buffer.from(await res.arrayBuffer()));
+      savedPhotoParam = tmpPath;
     } catch (err) {
-      console.error("[generate] photo download failed:", err);
+      console.error("[memorial/generate] photo download failed:", err);
     }
   }
 
-  // Build the query-string the GET handler expects
   const imageUrl = new URL("/api/memorial-card/image", request.url);
   imageUrl.searchParams.set("name", name);
   imageUrl.searchParams.set("interment", date_of_interment);
@@ -69,20 +50,13 @@ export async function POST(request: NextRequest) {
   if (location)        imageUrl.searchParams.set("location", location);
   if (savedPhotoParam) imageUrl.searchParams.set("photo", savedPhotoParam);
 
-  // Generate the image
   const imageResponse = await GET(new NextRequest(imageUrl));
   if (!imageResponse.ok) {
     return NextResponse.json({ error: "Image generation failed" }, { status: 500 });
   }
 
-  // Save to public/generated/memorial/ and return a public URL
   const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-  const outputFilename = `${crypto.randomUUID()}.png`;
-  const outputDir = path.join(process.cwd(), "public", "generated", "memorial");
-  await writeFile(path.join(outputDir, outputFilename), imageBuffer);
-
-  const origin = request.nextUrl.origin;
   return NextResponse.json({
-    url: `${origin}/generated/memorial/${outputFilename}`,
+    url: `data:image/png;base64,${imageBuffer.toString("base64")}`,
   });
 }

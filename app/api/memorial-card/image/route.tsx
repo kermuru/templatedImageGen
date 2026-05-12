@@ -110,6 +110,8 @@ export async function GET(request: NextRequest) {
   const resolvedPhotoPath =
     photoPath.startsWith("/uploads/")
       ? path.join(process.cwd(), "public", photoPath)
+      : path.isAbsolute(photoPath) && existsSync(photoPath)
+      ? photoPath
       : null;
 
   // Build the composited background (base + masked person photo)

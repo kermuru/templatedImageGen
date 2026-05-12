@@ -1,25 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile } from "fs/promises";
 import path from "path";
+import os from "os";
 import { GET } from "@/app/api/obituary-card/image/route";
 
 export const runtime = "nodejs";
 
-/**
- * POST /api/obituary-card/generate
- *
- * n8n webhook endpoint. Accepts JSON, generates the obituary card image,
- * saves it to disk, and returns a public URL.
- *
- * Body fields:
- *   name           string  required  Full name of the deceased
- *   date_of_birth  string  optional  ISO date e.g. "1956-01-28"
- *   date_died      string  optional  ISO date e.g. "2026-03-20"
- *   photo_url      string  optional  Public URL of the person's photo
- *
- * Response:
- *   { "url": "https://your-domain.com/generated/obituary/<uuid>.jpg" }
- */
 export async function POST(request: NextRequest) {
   let body: Record<string, string>;
   try {
@@ -34,7 +20,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
 
-  // Download photo and save locally so the image pipeline can access it
+  // Download photo to /tmp (writable on Vercel serverless)
   let savedPhotoParam: string | null = null;
   if (photo_url) {
     try {
@@ -46,36 +32,27 @@ export async function POST(request: NextRequest) {
                 : contentType.includes("webp") ? "webp"
                 : "jpg";
 
-      const filename = `${crypto.randomUUID()}.${ext}`;
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "obituary");
-      await writeFile(path.join(uploadDir, filename), Buffer.from(await res.arrayBuffer()));
-      savedPhotoParam = `/uploads/obituary/${filename}`;
+      const tmpPath = path.join(os.tmpdir(), `${crypto.randomUUID()}.${ext}`);
+      await writeFile(tmpPath, Buffer.from(await res.arrayBuffer()));
+      savedPhotoParam = tmpPath;
     } catch (err) {
       console.error("[obituary/generate] photo download failed:", err);
     }
   }
 
-  // Build the query-string the GET handler expects
   const imageUrl = new URL("/api/obituary-card/image", request.url);
   imageUrl.searchParams.set("name", name);
   if (date_of_birth)   imageUrl.searchParams.set("dob",   date_of_birth);
   if (date_died)       imageUrl.searchParams.set("died",  date_died);
   if (savedPhotoParam) imageUrl.searchParams.set("photo", savedPhotoParam);
 
-  // Generate the image
   const imageResponse = await GET(new NextRequest(imageUrl));
   if (!imageResponse.ok) {
     return NextResponse.json({ error: "Image generation failed" }, { status: 500 });
   }
 
-  // Save to public/generated/obituary/ and return a public URL
   const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-  const outputFilename = `${crypto.randomUUID()}.jpg`;
-  const outputDir = path.join(process.cwd(), "public", "generated", "obituary");
-  await writeFile(path.join(outputDir, outputFilename), imageBuffer);
-
-  const origin = request.nextUrl.origin;
   return NextResponse.json({
-    url: `${origin}/generated/obituary/${outputFilename}`,
+    url: `data:image/jpeg;base64,${imageBuffer.toString("base64")}`,
   });
 }

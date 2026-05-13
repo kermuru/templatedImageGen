@@ -74,10 +74,10 @@ async function buildBackground(
   }
 
   // Photo sized to fit centered within the left 480px panel
-  const photoW = 400;
-  const photoH = 520;
-  const photoLeft = Math.round((480 - photoW) / 2) + 60;   // shifted right toward center
-  const photoTop  = Math.round((H   - photoH) / 2);        // 55px
+  const photoW = 420;
+  const photoH = 420;
+  const photoLeft = Math.round((480 - photoW) / 2) + 60;
+  const photoTop  = Math.round((H   - photoH) / 2);
 
   const processedPhoto = await processPhoto(photoPath, photoW, photoH);
 

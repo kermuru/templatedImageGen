@@ -16,8 +16,8 @@ export async function processPhoto(
 ): Promise<Buffer> {
   const { data, info } = await sharp(photoPath)
     .resize(width, height, {
-      fit: "cover",
-      position: sharp.strategy.attention,
+      fit: "contain",
+      background: { r: 255, g: 255, b: 255, alpha: 0 },
       kernel: sharp.kernel.lanczos3,
     })
     .ensureAlpha()

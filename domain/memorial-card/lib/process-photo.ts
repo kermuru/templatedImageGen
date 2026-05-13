@@ -43,9 +43,9 @@ export async function processPhoto(
         if (x / info.width > 0.80)
           fade = Math.max(fade, smoothstep((x / info.width - 0.80) / 0.20));
 
-        // Bottom white fade: 55 % → 100 %
-        if (y / info.height > 0.55)
-          fade = Math.max(fade, smoothstep((y / info.height - 0.55) / 0.45));
+        // Bottom white fade: 40 % → 100 %
+        if (y / info.height > 0.40)
+          fade = Math.max(fade, smoothstep((y / info.height - 0.40) / 0.60));
 
         if (fade > 0) {
           data[i]     = Math.round(data[i]     + (255 - data[i])     * fade);

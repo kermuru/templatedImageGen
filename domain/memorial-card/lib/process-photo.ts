@@ -39,6 +39,10 @@ export async function processPhoto(
       if (data[i + 3] > 0) {
         let fade = 0;
 
+        // Left white fade: 0 → 20 %
+        if (x / info.width < 0.20)
+          fade = Math.max(fade, smoothstep(1 - x / info.width / 0.20));
+
         // Right white fade: 80 % → 100 %
         if (x / info.width > 0.80)
           fade = Math.max(fade, smoothstep((x / info.width - 0.80) / 0.20));

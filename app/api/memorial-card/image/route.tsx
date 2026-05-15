@@ -10,21 +10,25 @@ export const runtime = "nodejs";
 const W = 1200;
 const H = 630;
 
-// Load EB Garamond TTF from @expo-google-fonts/eb-garamond.
-// Satori supports TTF/OTF/WOFF but NOT WOFF2.
 function loadFont(weight: 400 | 700): Buffer {
   const [dir, file] =
     weight === 700
       ? ["700Bold", "EBGaramond_700Bold.ttf"]
       : ["400Regular", "EBGaramond_400Regular.ttf"];
   return readFileSync(
+    path.join(process.cwd(), "node_modules", "@expo-google-fonts", "eb-garamond", dir, file)
+  );
+}
+
+function loadRobotoSlab(): Buffer {
+  return readFileSync(
     path.join(
       process.cwd(),
       "node_modules",
       "@expo-google-fonts",
-      "eb-garamond",
-      dir,
-      file
+      "roboto-slab",
+      "500Medium",
+      "RobotoSlab_500Medium.ttf"
     )
   );
 }
@@ -74,10 +78,10 @@ async function buildBackground(
   }
 
   // Photo sized to fit centered within the left 480px panel
-  const photoW = 420;
-  const photoH = 420;
-  const photoLeft = Math.round((480 - photoW) / 2) + 60;
-  const photoTop  = Math.round((H   - photoH) / 2);
+  const photoW = 525;
+  const photoH = 525;
+  const photoLeft = Math.round((480 - photoW) / 2) + 120;
+  const photoTop  = Math.round((H   - photoH) / 2) - 25;
 
   const processedPhoto = await processPhoto(photoPath, photoW, photoH);
 
@@ -124,8 +128,10 @@ export async function GET(request: NextRequest) {
   const fonts: NonNullable<ConstructorParameters<typeof ImageResponse>[1]>["fonts"] = [
     { name: "Garamond", data: loadFont(400), weight: 400, style: "normal" },
     { name: "Garamond", data: loadFont(700), weight: 700, style: "normal" },
+    { name: "RobotoSlab", data: loadRobotoSlab(), weight: 500, style: "normal" },
   ];
   const fontFamily = "Garamond, serif";
+  const robotoSlabFamily = "RobotoSlab, serif";
 
   const gold = "#b28648";
   const darkGreen = "#07372f";
@@ -157,9 +163,9 @@ export async function GET(request: NextRequest) {
         <div
           style={{
             position: "absolute",
-            right: "56px",
+            right: "45px",
             // Start below the Renaissance logo already in the base image
-            top: "155px",
+            top: "80px",
             bottom: "30px",
             width: "600px",
             display: "flex",
@@ -184,18 +190,18 @@ export async function GET(request: NextRequest) {
             shares the interment details for
           </div>
 
-          {/* Full name — large bold gold serif */}
+          {/* Full name */}
           <div
             style={{
               fontSize: fullName.length > 28 ? "52px" : "60px",
-              color: gold,
-              fontWeight: 700,
+              color: "#a67c43",
+              fontWeight: 500,
               textAlign: "center",
-              lineHeight: "1.06",
-              letterSpacing: "0.02em",
+              lineHeight: "1.1",
+              letterSpacing: "0.05em",
               marginBottom: "18px",
               textTransform: "uppercase",
-              fontFamily,
+              fontFamily: robotoSlabFamily,
             }}
           >
             {fullName || "—"}
@@ -217,8 +223,8 @@ export async function GET(request: NextRequest) {
             </div>
           )}
 
-          {/* Mass Service */}
-          {massTime && (
+          {/* See you there + time */}
+          {(massTime || intermentTime) && (
             <div
               style={{
                 display: "flex",
@@ -230,16 +236,6 @@ export async function GET(request: NextRequest) {
             >
               <span
                 style={{
-                  fontSize: "18px",
-                  color: mutedText,
-                  fontWeight: 400,
-                  fontFamily,
-                }}
-              >
-                Mass Service
-              </span>
-              <span
-                style={{
                   fontSize: "23px",
                   color: darkGreen,
                   fontWeight: 700,
@@ -247,60 +243,25 @@ export async function GET(request: NextRequest) {
                   fontFamily,
                 }}
               >
-                {massTime}&nbsp;&nbsp;at {location}
+                {massTime || intermentTime}&nbsp;&nbsp;at {location}
               </span>
             </div>
           )}
 
-          {/* Interment Service */}
-          {intermentTime && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "2px",
-                marginBottom: "8px",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "18px",
-                  color: mutedText,
-                  fontWeight: 400,
-                  fontFamily,
-                }}
-              >
-                Interment Service
-              </span>
-              <span
-                style={{
-                  fontSize: "23px",
-                  color: darkGreen,
-                  fontWeight: 700,
-                  letterSpacing: "0.01em",
-                  fontFamily,
-                }}
-              >
-                {intermentTime}&nbsp;&nbsp;at {location}
-              </span>
-            </div>
-          )}
-
-          {/* Tagline */}
+          {/* In Memoriam */}
           <div
             style={{
               fontSize: "17px",
               color: mutedText,
               textAlign: "center",
-              lineHeight: "1.55",
-              maxWidth: "380px",
+              letterSpacing: "0.12em",
               fontWeight: 400,
               fontStyle: "italic",
               fontFamily,
+              marginTop: "20px",
             }}
           >
-            We invite family and loved ones to join us in remembrance.
+            IN MEMORIAM
           </div>
         </div>
       </div>

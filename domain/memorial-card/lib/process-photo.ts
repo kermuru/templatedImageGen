@@ -37,19 +37,13 @@ export async function processPhoto(
       data[i + 2] = gray;
 
       if (data[i + 3] > 0) {
-        let fade = 0;
-
-        // Left white fade: 0 → 20 %
-        if (x / info.width < 0.20)
-          fade = Math.max(fade, smoothstep(1 - x / info.width / 0.20));
-
-        // Right white fade: 80 % → 100 %
-        if (x / info.width > 0.80)
-          fade = Math.max(fade, smoothstep((x / info.width - 0.80) / 0.20));
-
-        // Bottom white fade: 60 % → 100 % (strong, concentrated at the bottom)
-        if (y / info.height > 0.60)
-          fade = Math.max(fade, smoothstep((y / info.height - 0.60) / 0.40));
+        // Multiplicative keep-amounts — corners blend naturally instead of creating seams
+        const nx = x / info.width;
+        const ny = y / info.height;
+        const keepLeft   = nx < 0.20 ? smoothstep(nx / 0.20) : 1;
+        const keepRight  = nx > 0.75 ? smoothstep((1 - nx) / 0.25) : 1;
+        const keepBottom = ny > 0.50 ? smoothstep((1 - ny) / 0.50) : 1;
+        const fade = 1 - keepLeft * keepRight * keepBottom;
 
         if (fade > 0) {
           data[i]     = Math.round(data[i]     + (255 - data[i])     * fade);

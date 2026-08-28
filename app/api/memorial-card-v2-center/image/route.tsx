@@ -103,7 +103,12 @@ async function buildBackground(
 
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
-  const fullName = sp.get("name") ?? "";
+  // Uppercased here, not via CSS textTransform, for two reasons: Satori (next/og)
+  // supports only a subset of CSS, and the name-fitting maths below reads
+  // fullName.length — it must measure the same string that actually gets drawn.
+  // AVG_CHAR_EM is an UPPERCASE advance width, so mixed-case input would be
+  // mis-sized even when it rendered correctly.
+  const fullName = (sp.get("name") ?? "").toUpperCase();
   const dateOfInterment = sp.get("interment") ?? "";
   const massTime = sp.get("mass_time") ?? "";
   const intermentTime = sp.get("interment_time") ?? "";

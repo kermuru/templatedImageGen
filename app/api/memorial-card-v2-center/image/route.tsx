@@ -150,7 +150,13 @@ export async function GET(request: NextRequest) {
   const NAME_BOX_W = 1000;         // design px — centered name width
   const NAME_MAX = 104;            // cap for short names
   const NAME_MIN = 22;             // floor (long names shrink to here, no wrapping)
-  const AVG_CHAR_EM = 0.52;
+  // Bodoni Moda's UPPERCASE advance averages ≈ 0.66em; the earlier 0.52 was a
+  // mixed-case figure and these names render in caps. Because the fit size scales
+  // inversely with length, understating the em did NOT just affect long names —
+  // it made the rendered width plateau at ~1269 px for every name past ~11
+  // characters, i.e. a constant ~269 px overflow that shrink-to-fit could never
+  // close. nowrap keeps it off the rows below, but it still ran past the box.
+  const AVG_CHAR_EM = 0.66;        // Bodoni Moda uppercase average advance width
 
   const fitSize = Math.floor(NAME_BOX_W / (Math.max(fullName.length, 1) * AVG_CHAR_EM));
   const nameSize = Math.round(Math.max(NAME_MIN, Math.min(NAME_MAX, fitSize)) * sx);

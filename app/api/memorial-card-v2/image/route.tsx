@@ -209,12 +209,17 @@ export async function GET(request: NextRequest) {
   // (> ONE_LINE_MAX_CHARS, with a splittable surname) drop the LAST word onto a
   // second line; the font is sized to the longer of the two lines and capped at
   // NAME_MAX_2 so both lines stay inside the box height.
-  // Bodoni Moda averages ≈ 0.52em per character.
+  // Bodoni Moda's UPPERCASE advance averages ≈ 0.66em. The earlier 0.52 was a
+  // mixed-case figure, and since these names render in caps it under-measured
+  // them by a quarter — "JUAN DELA CRUZ" was sized to 97px, estimated at 706px
+  // against a 708px box, and actually drew ~896px. With no nowrap it wrapped and
+  // the second line landed on top of the date/time chips. Both were fixed:
+  // a truthful em here, and nowrap on each line below.
   const NAME_BOX_W = 708;          // design px — the name box width
   const NAME_MAX = 108;            // design px — one-line cap (taller, like the reference)
   const NAME_MAX_2 = 64;           // design px — two-line cap (fits box height after scaleY)
   const NAME_MIN = 26;             // design px — floor
-  const AVG_CHAR_EM = 0.52;        // Bodoni Moda average advance width
+  const AVG_CHAR_EM = 0.66;        // Bodoni Moda uppercase average advance width
   const ONE_LINE_MAX_CHARS = 20;   // beyond this, drop the surname to line 2
 
   const nameWords = fullName.trim().split(/\s+/).filter(Boolean);
@@ -280,6 +285,10 @@ export async function GET(request: NextRequest) {
               color: GOLD,
               lineHeight: 1.05,
               letterSpacing: "0.01em",
+              // Never wrap: a second line here would overrun the fixed 156px box
+              // and collide with the chips below. Long names get their own second
+              // line via twoLineName instead, which the box is sized for.
+              whiteSpace: "nowrap",
               // scaleY keeps the height; scaleX condenses slightly to thin the stems.
               transform: "scaleX(0.92) scaleY(1.14)",
               transformOrigin: "center",
@@ -297,6 +306,7 @@ export async function GET(request: NextRequest) {
                 color: GOLD,
                 lineHeight: 1.05,
                 letterSpacing: "0.01em",
+                whiteSpace: "nowrap",
               }}
             >
               {nameLine2}
